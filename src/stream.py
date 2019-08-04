@@ -11,6 +11,7 @@ from nltk.tokenize import word_tokenize
 import json
 import pandas as pd
 import pyrebase
+import csv
 
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
@@ -21,6 +22,15 @@ from tqdm import tqdm_notebook as tqdm
 
 import akun_twitter
 import firebase_kred
+
+#Kolom csv nya :
+COLS = ['id','created_at','source',
+        'original_text','clean_text',
+        'positive','negative','sentiment',
+        'favorite_count', 'retweet_count',
+        'user_name_twitter']
+
+twit_buat_disave = {}
 
 # # # # TWITTER STREAMER # # # #
 class TwitterStreamer():
@@ -129,6 +139,9 @@ class StdOutListener(StreamListener):
         print("Positive value : ", positive)
         print("Negative Value : ", negative)
 
+        twit_buat_disave['positive']  = positive
+        twit_buat_disave['negative']  = negative
+
         #return hasil dari analisa sentimen :
         if positive == 0 or positive >= 1:
             return 'Positive'
@@ -141,24 +154,48 @@ class StdOutListener(StreamListener):
         try:
             #flow data twit ada disini :
             #json_acceptable_string = data.replace("'", "\"")
-            d = json.loads(data)
+            COLS = ['id','created_at','source',
+                    'original_text','clean_text',
+                    'positive','negative','sentiment',
+                    'favorite_count', 'retweet_count',
+                    'user']
+
+            twit                = json.loads(data)
 
             #jangan ada retweet :
-            if not d['retweeted'] and 'RT @' not in d['text']:
+            if not twit['retweeted'] and 'RT @' not in twit['text']:
+                #bersihin tweet dan stem :
+                stem_kata = self.clean_text(self.clean_tweet(twit['text']))
+                #hitung sentimen dari fungsi analyze_sentiment
+                sentimen = self.analyze_sentiment(stem_kata)
+
+                #data buat di save ke csv dan firebase :
+                twit_buat_disave['id']              = twit['id']
+                twit_buat_disave['created_at']      = twit['created_at']
+                twit_buat_disave['source']          = twit['source']
+                twit_buat_disave['original_text']   = twit['text']
+                twit_buat_disave['clean_text']      = stem_kata
+                twit_buat_disave['sentimen']        = sentimen
+                twit_buat_disave['favorite_count']  = twit['favorite_count']
+                twit_buat_disave['retweet_count']   = twit['retweet_count']
+                twit_buat_disave['user']            = twit['user']['screen_name']
+
                 #save ke firebase :
                 firebase = pyrebase.initialize_app(firebase_kred.config)
                 db = firebase.database()
-                db.child('MRT').push(d)
+                db.child('MRT').push(twit_buat_disave)
 
-                #bersihin tweet dan stem :
-                stem_kata = self.clean_text(self.clean_tweet(d['text']))
-                #hitung sentimen
-                sentimen = self.analyze_sentiment(stem_kata)
+                #save ke csv
+                #twit_buat_disave.to_csv(csvFile, mode='a', columns=COLS, index=False, encoding="utf-8")
+                try:
+                    with open('hasil/mrt.csv', 'a') as f:  # Just use 'w' mode in 3.x
+                        w = csv.DictWriter(f, twit_buat_disave.keys())
+                        w.writerow(twit_buat_disave)
+                except IOError:
+                    print("I/O error")
 
                 #print twit yg dah di bersihin ke console :
-                print(stem_kata)
-                #print sentimen :
-                print('Sentimen : ',sentimen)
+                print(twit_buat_disave)
 
             return True
         except BaseException as e:
@@ -172,9 +209,32 @@ class StdOutListener(StreamListener):
 
 if __name__ == '__main__':
 
-    # Authenticate using config.py and connect to Twitter Streaming API.
-    hash_tag_list = ["mrt jakarta","mrtjakarta","@mrtjakarta"]
+    #List kata kata yang mungkin akan terpikirkan :
+    word_list = [
+                        "mrt jakarta",
+                        "mrtjakarta",
+                        "@mrtjakarta",
+                        "mrt lebak",
+                        "mrt dukuh",
+                        "mrt blok m",
+                        "mrt sudirman",
+                        "mrt anies",
+                        "mrt ahok",
+                        "mrt benhil",
+                        "mrt pagi",
+                        "mrt dki",
+                        "mrt anis",
+                        "stasiun mrt",
+                        "mrt krl",
+                        "mrt tj",
+                        "mrt busway",
+                        "mrt pagi",
+                        "mrt sore",
+                        "mrt siang",
+                        "penumpang mrt",
+                    ]
+
     fetched_tweets_filename = "hasil/tweets.txt"
 
     twitter_streamer = TwitterStreamer()
-    twitter_streamer.stream_tweets(fetched_tweets_filename, hash_tag_list)
+    twitter_streamer.stream_tweets(fetched_tweets_filename, word_list)
