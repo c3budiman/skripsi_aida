@@ -1614,6 +1614,8 @@ panik
 panjang
 paradoks
 paradoksal
+payah
+pansos
 parah
 paranoia
 paranoid
@@ -1979,6 +1981,7 @@ satir
 satiris
 sayangnya
 sebelum waktunya
+maaf
 sedang saja
 sederhana
 sedih
