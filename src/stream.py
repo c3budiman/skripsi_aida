@@ -31,7 +31,7 @@ class TwitterStreamer():
         pass
 
     def stream_tweets(self, fetched_tweets_filename, hash_tag_list):
-        # This handles Twitter authetification and the connection to Twitter Streaming API
+        # Yang disini buat authentikasi dan konek ke stream api twitter via http
         listener = StdOutListener(fetched_tweets_filename)
         auth = OAuthHandler(akun_twitter.CONSUMER_KEY, akun_twitter.CONSUMER_SECRET)
         auth.set_access_token(akun_twitter.ACCESS_TOKEN, akun_twitter.ACCESS_TOKEN_SECRET)
@@ -44,7 +44,7 @@ class TwitterStreamer():
 # # # # TWITTER STREAM LISTENER # # # #
 class StdOutListener(StreamListener):
     """
-    Ini buat nampilin ke terminal aja, ga ada guna lainnya
+    Ini buat listen, twitter -> proses sentimen -> save ke Firebase
     """
     def __init__(self, fetched_tweets_filename):
         self.fetched_tweets_filename = fetched_tweets_filename
@@ -106,22 +106,30 @@ class StdOutListener(StreamListener):
       return data
 
     def analyze_sentiment(self, tweet):
-        # load positive word
+        #menginisialisasi kata positive
         positive = pd.read_csv('../bahan/positive.txt', header=None)
         positive = positive[0].values.tolist()
         positive = '|'.join(positive)
-        # load negative word
+
+        #menginisialisasi kata negative
         negative = pd.read_csv('../bahan/negative.txt', header=None)
         negative = negative[0].values.tolist()
         negative = '|'.join(negative)
 
+        #hitung nilai dari readable negative dan positive nya
         lower_positive_count = len(re.findall(positive, tweet.lower()))
         lower_negative_count = len(re.findall(negative, tweet.lower()))
         len_count   = len(tweet.split())
 
+        #handling supaya pembagian nya ga nol
         positive    = self.pembagian_nol(lower_positive_count,len_count)
         negative    = self.pembagian_nol(lower_negative_count,len_count)
 
+        #print nilai nya ke stdout dlu :
+        print("Positive value : ", positive)
+        print("Negative Value : ", negative)
+
+        #return hasil dari analisa sentimen :
         if positive == 0 or positive >= 1:
             return 'Positive'
         elif positive == negative:
@@ -131,18 +139,26 @@ class StdOutListener(StreamListener):
 
     def on_data(self, data):
         try:
-            json_acceptable_string = data.replace("'", "\"")
-            d = json.loads(json_acceptable_string)
+            #flow data twit ada disini :
+            #json_acceptable_string = data.replace("'", "\"")
+            d = json.loads(data)
 
-            #save to firebase :
-            firebase = pyrebase.initialize_app(firebase_kred.config)
-            db = firebase.database()
-            db.child('MRT').push(d)
+            #jangan ada retweet :
+            if not d['retweeted'] and 'RT @' not in d['text']:
+                #save ke firebase :
+                firebase = pyrebase.initialize_app(firebase_kred.config)
+                db = firebase.database()
+                db.child('MRT').push(d)
 
-            stem_kata = self.clean_text(self.clean_tweet(d['text']))
-            sentimen = self.analyze_sentiment(stem_kata)
-            print(stem_kata)
-            print('sentimen : ',sentimen)
+                #bersihin tweet dan stem :
+                stem_kata = self.clean_text(self.clean_tweet(d['text']))
+                #hitung sentimen
+                sentimen = self.analyze_sentiment(stem_kata)
+
+                #print twit yg dah di bersihin ke console :
+                print(stem_kata)
+                #print sentimen :
+                print('Sentimen : ',sentimen)
 
             return True
         except BaseException as e:
