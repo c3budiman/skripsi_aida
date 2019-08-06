@@ -1,7 +1,9 @@
 config = {
-  "apiKey": "AIzaSyCQqJ5DsQ7l7S5yP9cY2mIVsZTRtGKUzUE",
-  "authDomain": "webhostc3budiman.firebaseapp.com",
-  "databaseURL": "https://webhostc3budiman.firebaseio.com",
+  "apiKey": "AIzaSyAgnZZ8d-CZAyguUH1kUNPFgoob9YiV2cE",
+  "authDomain": "sentimenmrt.firebaseapp.com",
+  "databaseURL": "https://sentimenmrt.firebaseio.com",
   "serviceAccount": "firebase.json",
-  "storageBucket": "webhostc3budiman.appspot.com"
+  "storageBucket": "sentimenmrt.appspot.com"
 }
+
+
