@@ -142,12 +142,27 @@ class StdOutListener(StreamListener):
         twit_buat_disave['positive']  = positive
         twit_buat_disave['negative']  = negative
 
+        #reference pyrebase
+        fb           = pyrebase.initialize_app(firebase_kred.config)
+        at           = fb.database()
+        asd_negative = at.child("sentimen/negative").get().val()
+        asd_positive = at.child("sentimen/positive").get().val()
+        asd_netral   = at.child("sentimen/netral").get().val()
+        tambah       = 0
+        #print(sentimen.val())
+
         #return hasil dari analisa sentimen :
         if positive == 0 or positive >= 1:
+            tambah = int(asd_positive) + 1
+            at.child("sentimen").update({"positive": tambah})
             return 'Positive'
         elif positive == negative:
+            tambah = int(asd_negative) + 1
+            at.child("sentimen").update({"negative": tambah})
             return 'Netral'
         else:
+            tambah = int(asd_netral) + 1
+            at.child("sentimen").update({"netral": tambah})
             return 'Negative'
 
     def on_data(self, data):
@@ -232,7 +247,18 @@ if __name__ == '__main__':
                         "mrt sore",
                         "mrt siang",
                         "penumpang mrt",
-                    ]
+                        "mrt cibubur",
+                        "mrt kapan",
+                        "mrt cepat",
+                        "mrt leled",
+                        "mrt lama",
+                        "mrt bersih",
+                        "mrt rapi",
+                        "mrt mewah",
+                        "mrt dingin",
+                        "mrt panas",
+                        "mrt jauh",
+                ]
 
     fetched_tweets_filename = "hasil/tweets.txt"
 
