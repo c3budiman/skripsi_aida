@@ -26,6 +26,7 @@ amoral
 amoralitas
 ampun
 amuk
+aneh
 anak nakal
 anak yatim
 anarki
@@ -498,7 +499,6 @@ goresan
 gosip
 goyah
 goyangan
-gua
 gugup
 gurun
 gusar
@@ -784,7 +784,6 @@ keras kepala
 keras-kapal
 kerasnya
 kerdil
-kere
 kerepotan
 kereta
 keretakan

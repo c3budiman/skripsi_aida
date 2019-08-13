@@ -32,6 +32,16 @@ COLS = ['id','created_at','source',
 
 twit_buat_disave = {}
 
+# Emoji :
+emoji_pattern = re.compile("["
+                           u"\U0001F600-\U0001F64F"  # emoticons
+                           u"\U0001F300-\U0001F5FF"  # symbols & pictographs
+                           u"\U0001F680-\U0001F6FF"  # transport & map symbols
+                           u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                           u"\U00002702-\U000027B0"
+                           u"\U000024C2-\U0001F251"
+                           "]+", flags=re.UNICODE)
+
 # # # # TWITTER STREAMER # # # #
 class TwitterStreamer():
     """
@@ -129,7 +139,13 @@ class StdOutListener(StreamListener):
         #hitung nilai dari readable negative dan positive nya
         lower_positive_count = len(re.findall(positive, tweet.lower()))
         lower_negative_count = len(re.findall(negative, tweet.lower()))
+        print("positive",re.findall(positive, tweet.lower()))
+        print("lpc", lower_positive_count)
+        print("negative",re.findall(negative, tweet.lower()))
+        print("lnc", lower_negative_count)
+
         len_count   = len(tweet.split())
+        print("len_count", len_count)
 
         #handling supaya pembagian nya ga nol
         positive    = self.pembagian_nol(lower_positive_count,len_count)
@@ -152,7 +168,7 @@ class StdOutListener(StreamListener):
         #print(sentimen.val())
 
         #return hasil dari analisa sentimen :
-        if positive == 0 or positive >= 1:
+        if positive > negative:
             tambah = int(asd_positive) + 1
             at.child("sentimen").update({"positive": tambah})
             return 'Positive'
@@ -168,18 +184,20 @@ class StdOutListener(StreamListener):
     def on_data(self, data):
         try:
             #flow data twit ada disini :
-            #json_acceptable_string = data.replace("'", "\"")
+            json_acceptable_string = data.replace("'", "\"").encode('ascii', 'ignore').decode('ascii')
+
             COLS = ['id','created_at','source',
                     'original_text','clean_text',
                     'positive','negative','sentiment',
                     'favorite_count', 'retweet_count',
                     'user']
 
-            twit                = json.loads(data)
+            twit                = json.loads(json_acceptable_string)
 
             #jangan ada retweet :
             if not twit['retweeted'] and 'RT @' not in twit['text']:
                 #bersihin tweet dan stem :
+                #emot_lost = emoji_pattern.sub(r'', self.clean_tweet(twit['text']) )
                 stem_kata = self.clean_text(self.clean_tweet(twit['text']))
                 #hitung sentimen dari fungsi analyze_sentiment
                 sentimen = self.analyze_sentiment(stem_kata)
